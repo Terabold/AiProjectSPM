@@ -17,7 +17,8 @@
         "creator": "hello",
         "difficulty": "easy",
         "best_time": [
-            1.055
+            1.055,
+            1.062
         ]
     }
 }
