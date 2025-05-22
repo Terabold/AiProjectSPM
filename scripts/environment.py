@@ -200,12 +200,8 @@ class Environment:
             'spawners': load_images('tiles/spawners', scale=IMGscale),
             'spikes': load_images('tiles/spikes', scale=IMGscale),
             'finish': load_images('tiles/finish', scale=IMGscale),
-            'ores': load_images('tiles/ores', scale=IMGscale),
-            'weather': load_images('tiles/weather', scale=IMGscale),
             'kill': load_images('tiles/kill', scale=IMGscale),
-            'nether': load_images('tiles/nether', scale=IMGscale),
             'wood': load_images('tiles/wood', scale=IMGscale),
-            'wool': load_images('tiles/wool', scale=IMGscale),       
             'player': load_image('player/player.png', scale=PLAYERS_IMAGE_SIZE),
             'player/run': Animation(load_images('player/run', scale=PLAYERS_IMAGE_SIZE), img_dur=5),
             'player/idle': Animation(load_images('player/idle', scale=PLAYERS_IMAGE_SIZE), img_dur=25),
@@ -214,7 +210,6 @@ class Environment:
             'player/jump': Animation(load_images('player/jump', scale=PLAYERS_IMAGE_SIZE), img_dur=4, loop=False),
             'player/fall': Animation(load_images('player/fall', scale=PLAYERS_IMAGE_SIZE), img_dur=4, loop=False),
             'player/death': Animation(load_images('player/death', scale=(PLAYERS_IMAGE_SIZE[0]*2, PLAYERS_IMAGE_SIZE[1])), img_dur=6, loop=False),
-            'saws': load_images('tiles/saws', scale=IMGscale),
         }
         
         # Load background
