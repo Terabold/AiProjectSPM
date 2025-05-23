@@ -27,19 +27,20 @@ WALL_MOMENTUM_PRESERVE = 0.15  # Percentage of upward velocity preserved when hi
 WALL_MOMENTUM_FRAMES = 3 # amount of frames activated
 
 PLAYER_BUFFER = 5 # amount of frame buffer
+COYOTE_TIME = 6 # amount of frames you can jump after leaving the ground
 
 PLAYERS_SIZE = (TILE_SIZE, TILE_SIZE) # size of actual player hitbox
 PLAYERS_IMAGE_SIZE = (PLAYERS_SIZE[0], PLAYERS_SIZE[1]) # size of the player image
 
-PHYSICS_TILES = {'grass', 'stone', 'hardened_clay', 'ores', 'weather', 'nether', 'wood'}
-AUTOTILE_TYPES = {'grass', 'stone', 'hardened_clay', 'ores', 'weather','nether', 'wood'}
-INTERACTIVE_TILES = {'spikes', 'finish', 'saws', 'kill'}
+PHYSICS_TILES = {'grass', 'stone'}
+AUTOTILE_TYPES = {'grass', 'stone'}
+INTERACTIVE_TILES = {'spikes', 'finish', 'kill'}
 SPIKE_SIZE = (0.6, 0.25)
 SAW_SIZE = 0.8
 
 FONT = r'data\fonts\Menu.ttf' 
 
-EDITOR_SCROLL_SPEED = 10 # how fast you can move in the editor using WASD
+EDITOR_SCROLL_SPEED = 12 # how fast you can move in the editor using WASD
 
 MENUBG = r'data\images\menugbg.png'
 
@@ -65,3 +66,16 @@ def calculate_ui_constants(display_size):
         'MAPS_PER_PAGE': 20  
     }
 
+AUTOTILE_MAP = {
+    tuple(sorted([(1, 0), (0, 1)])): 0,
+    tuple(sorted([(1, 0), (0, 1), (-1, 0)])): 1,
+    tuple(sorted([(-1, 0), (0, 1)])): 2, 
+    tuple(sorted([(-1, 0), (0, -1), (0, 1)])): 3,
+    tuple(sorted([(-1, 0), (0, -1)])): 4,
+    tuple(sorted([(-1, 0), (0, -1), (1, 0)])): 5,
+    tuple(sorted([(1, 0), (0, -1)])): 6,
+    tuple(sorted([(1, 0), (0, -1), (0, 1)])): 7,
+    tuple(sorted([(1, 0), (-1, 0), (0, 1), (0, -1)])): 8,
+}
+
+NEIGHBOR_OFFSETS = [(-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (0, 0), (-1, 1), (0, 1), (1, 1)]

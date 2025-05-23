@@ -138,7 +138,7 @@ class Environment:
         self.movement_started = False
         self.scroll = [0, 0]
         self.render_scroll = [0, 0]
-        self.rotated_assets = {}  # Cache for rotated tile images
+        self.rotated_assets = {}
         self.show_rotation_values = False
 
         # Initialize fonts
@@ -167,11 +167,10 @@ class Environment:
         
         # Stop timer on level completion
         if self.player.finishLevel and self.timer.is_running:
-            time = self.timer.stop()
-            print('new record:', self.set_map_best_time(time=time))
+            self.timer.stop()
         
         self.timer.update()
-
+    
     def render_timer(self):
         timer_pos = (25, 10)
         display_time = self.timer.final_time if not self.timer.is_running else self.timer.current_time
@@ -201,7 +200,6 @@ class Environment:
             'spikes': load_images('tiles/spikes', scale=IMGscale),
             'finish': load_images('tiles/finish', scale=IMGscale),
             'kill': load_images('tiles/kill', scale=IMGscale),
-            'wood': load_images('tiles/wood', scale=IMGscale),
             'player': load_image('player/player.png', scale=PLAYERS_IMAGE_SIZE),
             'player/run': Animation(load_images('player/run', scale=PLAYERS_IMAGE_SIZE), img_dur=5),
             'player/idle': Animation(load_images('player/idle', scale=PLAYERS_IMAGE_SIZE), img_dur=25),
@@ -213,7 +211,7 @@ class Environment:
         }
         
         # Load background
-        background_path = self.tilemap.get_background_map() or 'background/background.png'
+        background_path = 'background/background.png'
         self.background = load_image(background_path, scale=DISPLAY_SIZE, remove_color=None)
 
         # Load sounds
@@ -233,7 +231,6 @@ class Environment:
         self.center_scroll_on_player()
         self.keys = {'left': False, 'right': False, 'jump': False}
         self.buffer_times = {'jump': 0}
-        self.buffer_time = 0  # For jump buffer timing
     
     def center_scroll_on_player(self):
         player_rect = self.player.rect()
@@ -254,7 +251,6 @@ class Environment:
         self.player.pos = self.default_pos.copy()
         self.keys = {'left': False, 'right': False, 'jump': False}
         self.buffer_times = {'jump': 0}
-        self.buffer_time = 0
         self.input_handler = InputHandler()
         
         # Reset timer and camera
@@ -279,24 +275,24 @@ class Environment:
         self.center_scroll_on_player()
         self.menu = False
 
-    def set_map_best_time(self, time):
-        current_map = game_state_manager.selected_map
-        current_index = str(os.path.basename(current_map).split('.')[0])
+    # def set_map_best_time(self, time):
+    #     current_map = game_state_manager.selected_map
+    #     current_index = str(os.path.basename(current_map).split('.')[0])
 
-        with open('metadata.json', 'r') as f:
-            all_maps_data = json.load(f)
+    #     with open('metadata.json', 'r') as f:
+    #         all_maps_data = json.load(f)
         
-        best_times = all_maps_data[current_index]['best_time']
-        is_new_record = len(best_times) < 3 or time < max(best_times)
+    #     best_times = all_maps_data[current_index]['best_time']
+    #     is_new_record = len(best_times) < 3 or time < max(best_times)
         
-        best_times.append(time)
-        best_times = sorted(best_times)[:3]  # Keep top 3
-        all_maps_data[current_index]['best_time'] = best_times
+    #     best_times.append(time)
+    #     best_times = sorted(best_times)[:3]  # Keep top 3
+    #     all_maps_data[current_index]['best_time'] = best_times
         
-        with open('metadata.json', 'w') as f:
-            json.dump(all_maps_data, f, indent=4)
+    #     with open('metadata.json', 'w') as f:
+    #         json.dump(all_maps_data, f, indent=4)
 
-        return is_new_record
+    #     return is_new_record
     
     def return_to_main(self):
         self.reset()
@@ -324,9 +320,8 @@ class Environment:
                 self.reset()
         else:
             self.reset()
-
+                
     def get_rotated_image(self, tile_type, variant, rotation):
-        """Get a cached rotated image for tiles"""
         key = f"{tile_type}_{variant}_{rotation}"
         
         if key not in self.rotated_assets:
@@ -348,7 +343,6 @@ class Environment:
                         self.game_menu.active_menu = None
                     
             self.keys, self.buffer_times = self.input_handler.process_events(events, self.menu)
-            self.buffer_time = self.buffer_times['jump']  # Keep buffer_time in sync
     
     def update(self):
         self.update_timer()
@@ -434,5 +428,3 @@ class Environment:
         if self.ai_train_mode:
             self.keys = action
             self.buffer_times['jump'] = min(self.buffer_times['jump'] + 1, PLAYER_BUFFER + 1) if action['jump'] else 0
-            self.buffer_time = self.buffer_times['jump']  # Keep buffer_time in sync
-            

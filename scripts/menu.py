@@ -115,7 +115,6 @@ class Menu:
         self.active_menu.update(events)
         self.active_menu.draw(self.screen)
 
-
 class MainMenuScreen(MenuScreen):
     def initialize(self):
         self.title = "Super Terboy"
@@ -385,308 +384,87 @@ class MapSelectionScreen(MenuScreen):
         self.total_pages = 0
         self.map_files = []
         self.map_numbers = []
-        self.map_metadata = {}  
-        
-        
-        info_font_size = int(DISPLAY_SIZE[1] * 0.02)  
-        detail_font_size = int(DISPLAY_SIZE[1] * 0.025)  
-        title_font_size = int(DISPLAY_SIZE[1] * 0.045)
-        self.info_font = pygame.font.Font(FONT, info_font_size)
-        self.detail_font = pygame.font.Font(FONT, detail_font_size)
-        self.title_font = pygame.font.Font(FONT, title_font_size)
-        
-        
-        self.difficulty_colors = {
-            'easy': (0, 255, 0),
-            'normal': (255, 255, 0),
-            'hard': (255, 165, 0),
-            'expert': (255, 0, 0),
-            'insane': (128, 0, 128),
-        }
-        
-        
-        self.showing_level_page = False
-        self.selected_map_id = None
-        
-        
-        self.load_metadata()
-
-    def load_metadata(self):
-        try:
-            with open('metadata.json', 'r') as f:
-                self.map_metadata = json.load(f)
-        except Exception as e:
-            print(f"Error loading metadata.json: {e}")
-            self.map_metadata = {}
 
     def initialize(self):
-        if self.showing_level_page:
-            self.initialize_level_page()
-        else:
-            self.title = "Select a Map"
-            self.load_maps()
-            self.recreate_buttons()
-
-    def initialize_level_page(self):
-        self.title = ""
-        self.clear_buttons()
-           
-        back_x = int(DISPLAY_SIZE[0] * 0.02)
-        back_y = int(DISPLAY_SIZE[1] * 0.02)
-        back_width = int(DISPLAY_SIZE[0] * 0.08)
-        self.create_button("←", self.return_to_selection, back_x, back_y, back_width)
-        
-        play_width = int(DISPLAY_SIZE[0] * 0.2)
-        play_height = int(DISPLAY_SIZE[1] * 0.08)
-            
-        panel_height = int(DISPLAY_SIZE[1] * 0.6)
-        panel_y = DISPLAY_SIZE[1] * 0.15
-        
-        play_x = DISPLAY_SIZE[0] // 2 - (play_width // 2)
-        play_y = panel_y + panel_height - play_height - int(DISPLAY_SIZE[1] * 0.05)
-        
-        self.create_button("PLAY", self.play_selected_map, play_x, play_y, play_width, (40, 180, 40))
-        
-        
-        if self.buttons:
-            self.buttons[-1].rect.height = play_height
+        self.title = "Select a Map"
+        self.load_maps()
+        self.recreate_buttons()
 
     def load_maps(self):
         maps_dir = 'data/maps'
         self.map_files = [f for f in os.listdir(maps_dir) if f.endswith('.json')]
         
-        
+        # Sort map files numerically
         def get_map_number(filename):
             try:
                 return int(filename.split('.')[0])
             except ValueError:
-                return float('inf')
+                return float('inf')  # Non-numeric names go to the end
                 
         self.map_files.sort(key=get_map_number)
         
-        
         self.total_pages = (len(self.map_files) + self.UI_CONSTANTS['MAPS_PER_PAGE'] - 1) // self.UI_CONSTANTS['MAPS_PER_PAGE']
         
-        
+        # Ensure current page is valid after reload
         if self.current_page >= self.total_pages:
             self.current_page = max(0, self.total_pages - 1)
             
-        
+        # Create map numbers for display
         self.map_numbers = [str(i) for i in range(len(self.map_files))]
 
     def recreate_buttons(self):
         self.clear_buttons()
         
-        
+        # Calculate pagination
         start_index = self.current_page * self.UI_CONSTANTS['MAPS_PER_PAGE']
         end_index = min(start_index + self.UI_CONSTANTS['MAPS_PER_PAGE'], len(self.map_files))
         
-        
+        # Get maps for current page
         current_page_files = self.map_files[start_index:end_index]
         current_page_numbers = self.map_numbers[start_index:end_index]
         
-        
-        button_width = int(DISPLAY_SIZE[0] * 0.1)  
+        # Scale button width with screen size
+        button_width = int(DISPLAY_SIZE[0] * 0.1)  # 15% of screen width
         padding = self.UI_CONSTANTS['BUTTON_SPACING']
         columns = self.UI_CONSTANTS['GRID_COLUMNS']
         
         grid_width = columns * (button_width + padding) - padding
         start_x = (DISPLAY_SIZE[0] - grid_width) // 2
         
-        
-        actions = []
-        for i in range(len(current_page_files)):
-            
-            map_index = start_index + i
-            actions.append(lambda idx=map_index: self.show_level_page(idx))
-            
+        # Create map selection buttons
+        actions = [lambda i=i: self.menu._select_map(current_page_files[i]) for i in range(len(current_page_files))]
         self.create_grid_buttons(current_page_numbers, actions, start_x, int(DISPLAY_SIZE[1] * 0.25), button_width)
         
+        # Relative positions for navigation buttons
+        middle_y = DISPLAY_SIZE[1] * 0.37  # 40% down the screen
         
-        middle_y = DISPLAY_SIZE[1] * 0.37
+        # Back button - position relative to screen size
+        back_x = int(DISPLAY_SIZE[0] * 0.02)  # 2% from left
+        back_y = int(DISPLAY_SIZE[1] * 0.02)  # 2% from top
+        back_width = int(DISPLAY_SIZE[0] * 0.08)  # 8% of screen width
         
-        
-        back_x = int(DISPLAY_SIZE[0] * 0.02)
-        back_y = int(DISPLAY_SIZE[1] * 0.02)
-        back_width = int(DISPLAY_SIZE[0] * 0.08)
-        self.create_button("←", self.menu._return_to_options, back_x, back_y, back_width)
-        
-        
+        # Create Previous button if applicable
         if self.current_page > 0:
-            prev_x = int(DISPLAY_SIZE[0] * 0.12)
-            nav_button_width = int(DISPLAY_SIZE[0] * 0.08)
+            prev_x = int(DISPLAY_SIZE[0] * 0.12)  # 5% from left (closer to edge)
+            nav_button_width = int(DISPLAY_SIZE[0] * 0.08)  # 10% of screen width
             self.create_button("◀", self.previous_page, prev_x, middle_y, nav_button_width)
         
-        
+        # Next page button - moved further to edge
         if self.current_page < self.total_pages - 1:
-            next_x = int(DISPLAY_SIZE[0] * 0.8)
-            nav_button_width = int(DISPLAY_SIZE[0] * 0.08)
+            next_x = int(DISPLAY_SIZE[0] * 0.8)  # 85% from left (closer to right edge)
+            nav_button_width = int(DISPLAY_SIZE[0] * 0.08)  # 10% of screen width
             self.create_button("▶", self.next_page, next_x, middle_y, nav_button_width)
         
-        
+        # Create back button
+        self.create_button("←", self.menu._return_to_options, back_x, back_y, back_width)
+
         if self.total_pages > 1:
             page_info = f"Page {self.current_page + 1}/{self.total_pages}"
             center_x = DISPLAY_SIZE[0] // 2
-            page_y = DISPLAY_SIZE[1] * 0.68
-            page_width = int(DISPLAY_SIZE[0] * 0.25)
-            self.create_button(page_info, lambda: None, center_x - (page_width // 2), page_y, page_width)
-
-    def show_level_page(self, map_index):
-        self.menu._play_sound('click')
-        
-        if map_index < 0 or map_index >= len(self.map_files):
-            return
+            page_y = DISPLAY_SIZE[1] * 0.7  # 70% down the screen
+            page_width = int(DISPLAY_SIZE[0] * 0.25)  # 25% of screen width
             
-        
-        map_file = self.map_files[map_index]
-        map_id = map_file.split('.')[0]  
-        
-        self.selected_map_id = map_id
-        self.showing_level_page = True
-        
-        
-        self.menu.selected_map = os.path.join('data', 'maps', map_file)
-        game_state_manager.selected_map = self.menu.selected_map
-        
-        
-        self.initialize_level_page()
-
-    def return_to_selection(self):
-        self.menu._play_sound('click')
-        self.showing_level_page = False
-        self.initialize()
-
-    def play_selected_map(self):
-        if self.selected_map_id is not None:
-            self.menu._play_sound('click')
-            self.menu.play_game()
-
-    def draw(self, surface):
-        if self.showing_level_page:
-            self.draw_level_page(surface)
-        else:
-            super().draw(surface)
-
-    def load_metadata(self):
-        try:
-            with open('metadata.json', 'r') as f:
-                self.map_metadata = json.load(f)
-        except Exception as e:
-            print(f"Error loading metadata.json: {e}")
-            self.map_metadata = {}
-
-    def draw_level_page(self, surface):        
-        if self.selected_map_id is None:
-            return
-        
-        self.load_metadata()
-
-        center_x = DISPLAY_SIZE[0] // 2
-        shadow_offset = max(1, int(2 * (DISPLAY_SIZE[1] / 1080)))
-        map_data = self.map_metadata.get(self.selected_map_id, {})
-        if not map_data:
-            render_text_with_shadow(
-                surface,
-                "Map data not found",
-                self.title_font,
-                (255, 100, 100),
-                center_x,
-                DISPLAY_SIZE[1] * 0.2,
-                shadow_offset,
-                True
-            )
-            return
-
-        panel_width = int(DISPLAY_SIZE[0] * 0.8)
-        panel_height = int(DISPLAY_SIZE[1] * 0.6)
-        panel_x = center_x - panel_width // 2
-        panel_y = DISPLAY_SIZE[1] * 0.15
-        panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
-        panel.fill((0, 0, 0, 120))
-        surface.blit(panel, (panel_x, panel_y))
-
-        level_name = map_data.get('name', f"Level {self.selected_map_id}")
-        render_text_with_shadow(
-            surface,
-            level_name,
-            self.title_font,
-            (255, 255, 160),
-            center_x,
-            panel_y + int(DISPLAY_SIZE[1] * 0.05),
-            shadow_offset,
-            True
-        )
-        creator_y = panel_y + int(DISPLAY_SIZE[1] * 0.12)
-        difficulty = map_data.get('difficulty', 'normal')
-        creator = map_data.get('creator', 'YourName')
-        creator_text = f"Creator: {creator}"
-        render_text_with_shadow(
-            surface,
-            creator_text,
-            self.detail_font,
-            (200, 200, 255),
-            center_x - int(DISPLAY_SIZE[0] * 0.15),
-            creator_y,
-            shadow_offset,
-            True
-        )
-        
-        difficulty_text = f"Difficulty: {difficulty.upper()}"
-        diff_color = self.difficulty_colors.get(difficulty.lower(), (200, 200, 200))
-        diff_text_x = center_x + int(DISPLAY_SIZE[0] * 0.15)
-        render_text_with_shadow(
-            surface,
-            difficulty_text,
-            self.detail_font,
-            diff_color,
-            diff_text_x,
-            creator_y,
-            shadow_offset,
-            True
-        )
-        leaderboard_y = panel_y + int(DISPLAY_SIZE[1] * 0.2)
-        render_text_with_shadow(
-            surface,
-            "Top Times:",
-            self.detail_font,
-            (160, 255, 255),
-            center_x,
-            leaderboard_y,
-            shadow_offset,
-            True
-        )
-        best_time = map_data.get('best_time')
-        leaderboard_entries = []
-        if best_time:
-            leaderboard_entries = best_time.copy()
-        if leaderboard_entries:
-            for i, time in enumerate(leaderboard_entries):
-                entry_y = leaderboard_y + int(DISPLAY_SIZE[1] * 0.05) + (i * int(DISPLAY_SIZE[1] * 0.035))
-                entry_text = f"{i+1}: {time}"
-                render_text_with_shadow(
-                    surface,
-                    entry_text,
-                    self.info_font,
-                    (160, 255, 160),
-                    center_x,
-                    entry_y,
-                    shadow_offset,
-                    True
-                )
-        else:
-            render_text_with_shadow(
-                surface,
-                "No records yet. Be the first!",
-                self.info_font,
-                (200, 200, 200),
-                center_x,
-                leaderboard_y + int(DISPLAY_SIZE[1] * 0.05),
-                shadow_offset,
-                True
-            )
-
-        for button in self.buttons:
-            button.draw(surface)
+            self.create_button(page_info, lambda: None, center_x - (page_width // 2), page_y, page_width)
 
     def next_page(self):
         if self.current_page < self.total_pages - 1:
@@ -697,4 +475,3 @@ class MapSelectionScreen(MenuScreen):
         if self.current_page > 0:
             self.current_page -= 1
             self.recreate_buttons()
-            

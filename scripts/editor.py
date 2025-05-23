@@ -5,7 +5,7 @@ import random
 import json
 from scripts.utils import load_images, load_image, find_next_numeric_filename, MenuScreen, load_sounds, TextInput, render_text_with_shadow
 from scripts.tilemap import Tilemap
-from scripts.constants import TILE_SIZE, DISPLAY_SIZE, FPS, PHYSICS_TILES, FONT, MENUBG, calculate_ui_constants
+from scripts.constants import TILE_SIZE, DISPLAY_SIZE, FPS, PHYSICS_TILES, FONT, MENUBG, calculate_ui_constants, EDITOR_SCROLL_SPEED
 from scripts.GameManager import game_state_manager
 
 class EditorMenu:
@@ -89,349 +89,122 @@ class EditorMenu:
         self.map_menu.draw(self.screen)
 
 class EditorMapSelectionScreen(MenuScreen):
-    def __init__(self, menu, title="Map Selection"):
+    def __init__(self, menu, title="Edit a Map"):
         super().__init__(menu, title)
         self.current_page = 0
         self.total_pages = 0
         self.map_files = []
         self.map_numbers = []
-        self.map_metadata = {}
-        
-        self.fonts = {
-            'info': pygame.font.Font(FONT, int(DISPLAY_SIZE[1] * 0.02)),
-            'detail': pygame.font.Font(FONT, int(DISPLAY_SIZE[1] * 0.025)),
-            'title': pygame.font.Font(FONT, int(DISPLAY_SIZE[1] * 0.045))
-        }
-        
-        self.selected_map_id = None
-        self.showing_edit_page = False
-        self.text_inputs = {}
-        
-        self.difficulty_options = ['easy', 'normal', 'hard', 'expert', 'insane']
-        self.selected_difficulty = 0
-        self.difficulty_colors = {
-            'easy': (0, 255, 0), 'normal': (255, 255, 0), 'hard': (255, 165, 0),
-            'expert': (255, 0, 0), 'insane': (128, 0, 128)
-        }
-        
-        self.load_metadata()
 
-    def check_file_permissions(self):
-        try:
-            metadata_path = 'metadata.json'
-            if os.path.exists(metadata_path):
-                return os.access(metadata_path, os.W_OK)
-            return os.access(os.path.dirname(metadata_path), os.W_OK)
-        except Exception:
-            return False
-
-    def atomic_write(self, data, filename):
-        temp_file = filename + '.tmp'
-        try:
-            with open(temp_file, 'w') as f:
-                json.dump(data, f, indent=2)
-            os.replace(temp_file, filename)
-            return True
-        except Exception:
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
-            return False
-
-    def load_metadata(self):
-        try:
-            if os.path.exists('metadata.json'):
-                with open('metadata.json', 'r') as f:
-                    self.map_metadata = json.load(f)
-            else:
-                self.map_metadata = {}
-        except Exception:
-            self.map_metadata = {}
-
-    def validate_metadata(self):
-        if not self.selected_map_id:
-            return False
-        
-        metadata = self.map_metadata.get(self.selected_map_id, {})
-        
-        if not metadata.get('name'):
-            return False
-        if not metadata.get('creator'):
-            return False
-        if not metadata.get('difficulty') in self.difficulty_options:
-            return False
-            
-        return True
-
-    def save_metadata(self):
-        if not self.check_file_permissions():
-            return False
-
-        metadata_path = 'metadata.json'
-        try:
-            return self.atomic_write(self.map_metadata, metadata_path)
-        except Exception:
-            return False
-    
     def initialize(self):
-        if self.showing_edit_page:
-            self.initialize_edit_page()
-        else:
-            self.title = "Map Selection"
-            self.load_maps()
-            self.recreate_buttons()
-            
+        self.title = "Edit a Map"
+        self.load_maps()
+        self.create_map_buttons()
+        
     def load_maps(self):
         maps_dir = 'data/maps'
-        os.makedirs(maps_dir, exist_ok=True)
+        if not os.path.exists(maps_dir):
+            os.makedirs(maps_dir)
             
         self.map_files = [f for f in os.listdir(maps_dir) if f.endswith('.json')]
-        self.map_files.sort(key=lambda f: int(f.split('.')[0]) if f.split('.')[0].isdigit() else float('inf'))
         
-        maps_per_page = self.UI_CONSTANTS.get('MAPS_PER_PAGE', 20)
+        # Sort map files numerically
+        def get_map_number(filename):
+            try:
+                return int(filename.split('.')[0])
+            except ValueError:
+                return float('inf')
+                
+        self.map_files.sort(key=get_map_number)
+        
+        # Fixed at 20 maps per page
+        maps_per_page = 20
         self.total_pages = (len(self.map_files) + maps_per_page - 1) // maps_per_page
-        self.current_page = min(self.current_page, max(0, self.total_pages - 1))
-        self.map_numbers = [str(i) for i in range(len(self.map_files))]
+        
+        if self.current_page >= self.total_pages:
+            self.current_page = max(0, self.total_pages - 1)
+        
+        self.map_numbers = [str(index) for index in range(len(self.map_files))]
     
-    def recreate_buttons(self):
+    def create_map_buttons(self):
         self.clear_buttons()
         
-        maps_per_page = self.UI_CONSTANTS.get('MAPS_PER_PAGE', 20)
+        # Fixed at 20 maps per page
+        maps_per_page = 20
+        # Calculate pagination
         start_index = self.current_page * maps_per_page
         end_index = min(start_index + maps_per_page, len(self.map_files))
         
+        # Get maps for current page
         current_page_files = self.map_files[start_index:end_index]
         current_page_numbers = self.map_numbers[start_index:end_index]
         
-        button_width = int(DISPLAY_SIZE[0] * 0.1)
-        columns = self.UI_CONSTANTS['GRID_COLUMNS']
+        # Scale button width with screen size - increased for better text padding
+        button_width = int(DISPLAY_SIZE[0] * 0.1)  # 18% of screen width
         padding = self.UI_CONSTANTS['BUTTON_SPACING']
+        columns = self.UI_CONSTANTS['GRID_COLUMNS']
         
         grid_width = columns * (button_width + padding) - padding
         start_x = (DISPLAY_SIZE[0] - grid_width) // 2
         
-        actions = [lambda idx=self.map_files[start_index + i].split('.')[0]: self.show_edit_page(idx) 
+        # Create actions for selecting maps
+        actions = [lambda i=i: self.menu._select_map(self.map_files[start_index + i]) 
                   for i in range(len(current_page_files))]
-            
+        
+        # Create map buttons - use relative positioning with larger size
         self.create_grid_buttons(
-            current_page_numbers, actions, start_x, 
-            int(DISPLAY_SIZE[1] * 0.25), button_width
+            current_page_numbers,
+            actions,
+            start_x,
+            int(DISPLAY_SIZE[1] * 0.25),  # 25% from top
+            button_width
         )
         
-        self._create_navigation_buttons()
+        # Calculate the position for navigation buttons - use relative positioning
+        middle_y = DISPLAY_SIZE[1] * 0.37  # 40% down the screen
         
-    def _create_navigation_buttons(self):
-        self.create_button("←", self.return_to_editor_menu, 
-                          int(DISPLAY_SIZE[0] * 0.02), int(DISPLAY_SIZE[1] * 0.02), 
-                          int(DISPLAY_SIZE[0] * 0.08))
+        # Add "Return" button - position relative to screen size
+        back_x = int(DISPLAY_SIZE[0] * 0.02)  # 2% from left
+        back_y = int(DISPLAY_SIZE[1] * 0.02)  # 2% from top
+        back_width = int(DISPLAY_SIZE[0] * 0.08)  # 10% of screen width (increased)
+        self.create_button("←", self.menu.quit_editor, back_x, back_y, back_width)
         
-        self.create_button("Add", self.menu.create_new_map, 
-                          int(DISPLAY_SIZE[0] * 0.75), int(DISPLAY_SIZE[1] * 0.15), 
-                          int(DISPLAY_SIZE[0] * 0.1))
+        # Add "New Map" button - position relative to screen size
+        new_map_x = int(DISPLAY_SIZE[0] * 0.75)  # 15% from left
+        new_map_y = int(DISPLAY_SIZE[1] * 0.15)  # 15% from top
+        new_map_width = int(DISPLAY_SIZE[0] * 0.1)  # 15% of screen width (increased)
+        self.create_button("Add", self.menu.create_new_map, new_map_x, new_map_y, new_map_width)
         
-        middle_y = DISPLAY_SIZE[1] * 0.37
-        nav_width = int(DISPLAY_SIZE[0] * 0.09)
-        
+        # Previous page button - moved further to edge
         if self.current_page > 0:
-            self.create_button("◀", self.previous_page, int(DISPLAY_SIZE[0] * 0.12), middle_y, nav_width)
+            prev_x = int(DISPLAY_SIZE[0] * 0.12)  # 5% from left (closer to edge)
+            nav_button_width = int(DISPLAY_SIZE[0] * 0.08)  # 10% of screen width
+            self.create_button("◀", self.previous_page, prev_x, middle_y, nav_button_width)
         
+        # Next page button - moved further to edge
         if self.current_page < self.total_pages - 1:
-            self.create_button("▶", self.next_page, int(DISPLAY_SIZE[0] * 0.8), middle_y, nav_width)
+            next_x = int(DISPLAY_SIZE[0] * 0.8)  # 85% from left (closer to right edge)
+            nav_button_width = int(DISPLAY_SIZE[0] * 0.08)  # 10% of screen width
+            self.create_button("▶", self.next_page, next_x, middle_y, nav_button_width)
         
+        # Add pagination info
         if self.total_pages > 1:
             page_info = f"Page {self.current_page + 1}/{self.total_pages}"
-            page_width = int(DISPLAY_SIZE[0] * 0.25)
-            self.create_button(page_info, lambda: None, 
-                             DISPLAY_SIZE[0] // 2 - page_width // 2, 
-                             DISPLAY_SIZE[1] * 0.68, page_width)
-    
-    def initialize_edit_page(self):
-        self.clear_buttons()
-        
-        panel_width = int(DISPLAY_SIZE[0] * 0.8)
-        panel_height = int(DISPLAY_SIZE[1] * 0.6)
-        panel_x = (DISPLAY_SIZE[0] - panel_width) // 2
-        panel_y = DISPLAY_SIZE[1] * 0.15
-        
-        self.create_button("←", self.return_to_map_list, 
-                          int(DISPLAY_SIZE[0] * 0.02), int(DISPLAY_SIZE[1] * 0.02), 
-                          int(DISPLAY_SIZE[0] * 0.08))
-        
-        button_y = panel_y + panel_height - int(DISPLAY_SIZE[1] * 0.12)
-        
-        self.create_button("Save Changes", self.save_map_metadata, 
-                          panel_x + int(panel_width * 0.25) - int(DISPLAY_SIZE[0] * 0.1),
-                          button_y, int(DISPLAY_SIZE[0] * 0.27), (30, 144, 255))
-        
-        self.create_button("Edit Map", self.edit_selected_map, 
-                          panel_x + int(panel_width * 0.75) - int(DISPLAY_SIZE[0] * 0.1),
-                          button_y, int(DISPLAY_SIZE[0] * 0.2), (40, 180, 40))
-        
-        self.create_difficulty_buttons()
-        self.create_text_inputs()
-    
-    def create_difficulty_buttons(self):
-        button_width = int(DISPLAY_SIZE[0] * 0.03)
-        button_y = DISPLAY_SIZE[1] * 0.44
-        right_x = DISPLAY_SIZE[0] * 0.75
-        
-        self.create_button("◀", self.previous_difficulty, 
-                          right_x - int(DISPLAY_SIZE[0] * 0.09) - button_width, 
-                          button_y, button_width)
-        
-        self.create_button("▶", self.next_difficulty, 
-                          right_x + int(DISPLAY_SIZE[0] * 0.09), 
-                          button_y, button_width)
-    
-    def create_text_inputs(self):
-        input_width = int(DISPLAY_SIZE[0] * 0.5)
-        input_height = int(DISPLAY_SIZE[1] * 0.05)
-        panel_x = (DISPLAY_SIZE[0] - int(DISPLAY_SIZE[0] * 0.8)) // 2
-        
-        map_data = {}
-        if self.selected_map_id in self.map_metadata:
-            map_data = self.map_metadata[self.selected_map_id]
-        
-        name_rect = pygame.Rect(DISPLAY_SIZE[0] // 2 - input_width // 2, 
-                               DISPLAY_SIZE[1] * 0.33, input_width, input_height)
-        
-        creator_rect = pygame.Rect(panel_x + int(DISPLAY_SIZE[0] * 0.05), 
-                                  DISPLAY_SIZE[1] * 0.44, 
-                                  int(input_width * 0.6), input_height)
-        
-        self.text_inputs = {
-            'name': TextInput(name_rect, self.fonts['detail'], self.menu, 
-                            max_chars=30, placeholder="Enter map name..."),
-            'creator': TextInput(creator_rect, self.fonts['detail'], self.menu, 
-                               max_chars=20, placeholder="Creator name...")
-        }
-        
-        self.text_inputs['name'].text = map_data.get('name', "")
-        self.text_inputs['creator'].text = map_data.get('creator', "")
-        
-        current_difficulty = map_data.get('difficulty', 'normal')
-        self.selected_difficulty = (self.difficulty_options.index(current_difficulty) 
-                                  if current_difficulty in self.difficulty_options else 1)
-    
-    def edit_selected_map(self):
-        self.menu._play_sound('click')
-        map_filename = f"{self.selected_map_id}.json"
-        
-        for map_file in self.map_files:
-            if map_file == map_filename:
-                self.menu._select_map(map_file)
-                return
-                
-        self.menu._select_map(f"data/maps/{map_filename}")
-    
-    def show_edit_page(self, map_id):
-        self.menu._play_sound('click')
-        self.selected_map_id = map_id
-        self.showing_edit_page = True
-        self.title = ""
-        self.initialize_edit_page()
-    
-    def return_to_map_list(self):
-        self.menu._play_sound('click')
-        self.showing_edit_page = False
-        self.initialize()
-    
-    def return_to_editor_menu(self):
-        self.menu._play_sound('click')
-        self.menu.quit_editor()
-    
-    def save_map_metadata(self):
-        self.menu._play_sound('click')
-        
-        if not self.selected_map_id:
-            return
-
-        if self.selected_map_id not in self.map_metadata:
-            self.map_metadata[self.selected_map_id] = {}
-
-        self.map_metadata[self.selected_map_id].update({
-            'path': f"data/maps/{self.selected_map_id}.json",
-            'name': self.text_inputs['name'].text.strip(),
-            'creator': self.text_inputs['creator'].text.strip(),
-            'difficulty': self.difficulty_options[self.selected_difficulty],
-        })
-
-        if 'best_time' not in self.map_metadata[self.selected_map_id]:
-            self.map_metadata[self.selected_map_id]['best_time'] = []
-
-        if self.validate_metadata():
-            self.save_metadata()
-        
-    def next_difficulty(self):
-        self.selected_difficulty = (self.selected_difficulty + 1) % len(self.difficulty_options)
-    
-    def previous_difficulty(self):
-        self.selected_difficulty = (self.selected_difficulty - 1) % len(self.difficulty_options)
+            center_x = DISPLAY_SIZE[0] // 2
+            page_y = DISPLAY_SIZE[1] * 0.7  # 70% down the screen
+            page_width = int(DISPLAY_SIZE[0] * 0.25)  # 25% of screen width
+            
+            self.create_button(page_info, lambda: None, center_x - (page_width // 2), page_y, page_width)
     
     def next_page(self):
         if self.current_page < self.total_pages - 1:
             self.current_page += 1
-            self.recreate_buttons()
+            self.create_map_buttons()
 
     def previous_page(self):
         if self.current_page > 0:
             self.current_page -= 1
-            self.recreate_buttons()
-    
-    def update(self, events):
-        super().update(events)
-        
-        if self.showing_edit_page:
-            for input_field in self.text_inputs.values():
-                for event in events:
-                    input_field.handle_event(event)
-                input_field.update()
-    
-    def draw(self, surface):
-        if self.showing_edit_page:
-            self.draw_edit_page(surface)
-        else:            
-            super().draw(surface)   
-    
-    def draw_edit_page(self, surface):
-        center_x = DISPLAY_SIZE[0] // 2
-        shadow_offset = max(1, int(2 * (DISPLAY_SIZE[1] / 1080)))
-        
-        panel_width = int(DISPLAY_SIZE[0] * 0.8)
-        panel_height = int(DISPLAY_SIZE[1] * 0.6)
-        panel_x = center_x - panel_width // 2
-        panel_y = DISPLAY_SIZE[1] * 0.15
-        
-        panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
-        panel.fill((0, 0, 0, 120))
-        surface.blit(panel, (panel_x, panel_y))
-        
-        edit_title = f"Editing Map #{self.selected_map_id}"
-        render_text_with_shadow(surface, edit_title, self.fonts['title'], (255, 255, 160),
-                               center_x, panel_y + int(DISPLAY_SIZE[1] * 0.05), shadow_offset, True)
-
-        super().draw(surface)
-        
-        self._draw_labels_and_content(surface, shadow_offset, center_x, panel_x)
-        
-        for input_field in self.text_inputs.values():
-            input_field.draw(surface)
-    
-    def _draw_labels_and_content(self, surface, shadow_offset, center_x, panel_x):
-        render_text_with_shadow(surface, "Map Name:", self.fonts['detail'], (200, 200, 255),
-                               center_x, DISPLAY_SIZE[1] * 0.30, shadow_offset, True)
-        
-        render_text_with_shadow(surface, "Creator:", self.fonts['detail'], (200, 200, 255),
-                               panel_x + int(DISPLAY_SIZE[0] * 0.05), DISPLAY_SIZE[1] * 0.41, shadow_offset, False)
-        
-        right_x = DISPLAY_SIZE[0] * 0.75
-        render_text_with_shadow(surface, "Difficulty:", self.fonts['detail'], (200, 200, 255),
-                               right_x, DISPLAY_SIZE[1] * 0.44, shadow_offset, True)
-
-        current_difficulty = self.difficulty_options[self.selected_difficulty]
-        diff_color = self.difficulty_colors.get(current_difficulty.lower(), (200, 200, 200))
-
-        render_text_with_shadow(surface, current_difficulty.upper(), self.fonts['detail'], diff_color,
-                               right_x, DISPLAY_SIZE[1] * 0.48, shadow_offset, True)
+            self.create_map_buttons()
 
 class Editor:
     def __init__(self, menu, map_file=None):
@@ -519,7 +292,6 @@ class Editor:
             'spikes': load_images('tiles/spikes', scale=IMGscale),
             'finish': load_images('tiles/finish', scale=IMGscale),
             'kill': load_images('tiles/kill', scale=IMGscale),
-            'wood': load_images('tiles/wood', scale=IMGscale),
         }
         self.rotated_assets = {}
         return assets
@@ -730,6 +502,8 @@ class Editor:
                 self.movement[3] = True
             elif event.key == pygame.K_g:
                 self.ongrid = not self.ongrid
+            elif event.key == pygame.K_t:
+                self.tilemap.autotile()
             elif event.key == pygame.K_o:
                 self.save_map()
             elif event.key in {pygame.K_LSHIFT, pygame.K_RSHIFT}:
@@ -765,8 +539,8 @@ class Editor:
         return False
         
     def update_scroll(self):
-        self.scroll[0] += (self.movement[1] - self.movement[0]) * 14
-        self.scroll[1] += (self.movement[3] - self.movement[2]) * 14  
+        self.scroll[0] += (self.movement[1] - self.movement[0]) * EDITOR_SCROLL_SPEED
+        self.scroll[1] += (self.movement[3] - self.movement[2]) * EDITOR_SCROLL_SPEED
         return (int(self.scroll[0]), int(self.scroll[1]))
         
     def draw_save_notification(self):

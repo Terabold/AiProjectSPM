@@ -1,9 +1,7 @@
 # tilemap.py
 import json
 import pygame
-from scripts.constants import PHYSICS_TILES, INTERACTIVE_TILES, SPIKE_SIZE
-
-NEIGHBOR_OFFSETS = [(-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (0, 0), (-1, 1), (0, 1), (1, 1)]
+from scripts.constants import PHYSICS_TILES, INTERACTIVE_TILES, SPIKE_SIZE, NEIGHBOR_OFFSETS, AUTOTILE_TYPES, AUTOTILE_MAP
 
 class Tilemap:
     def __init__(self, game, tile_size=16):
@@ -47,6 +45,19 @@ class Tilemap:
                     del self.tilemap[loc]
         
         return matches
+
+    def autotile(self):
+        for loc in self.tilemap:
+            tile = self.tilemap[loc]
+            neighbors = set()
+            for shift in [(1, 0), (-1, 0), (0, -1), (0, 1)]:
+                check_loc = str(tile['pos'][0] + shift[0]) + ';' + str(tile['pos'][1] + shift[1])
+                if check_loc in self.tilemap:
+                    if self.tilemap[check_loc]['type'] == tile['type']:
+                        neighbors.add(shift)
+            neighbors = tuple(sorted(neighbors))
+            if (tile['type'] in AUTOTILE_TYPES) and (neighbors in AUTOTILE_MAP):
+                tile['variant'] = AUTOTILE_MAP[neighbors]
 
     def save(self, path):
         lowest_y = 0
