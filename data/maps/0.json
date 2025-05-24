@@ -146,7 +146,7 @@
         },
         "10;7": {
             "type": "stone",
-            "variant": 8,
+            "variant": 3,
             "pos": [
                 10,
                 7
@@ -154,7 +154,7 @@
         },
         "14;7": {
             "type": "stone",
-            "variant": 8,
+            "variant": 7,
             "pos": [
                 14,
                 7
@@ -2266,7 +2266,7 @@
         },
         "11;7": {
             "type": "kill",
-            "variant": 0,
+            "variant": 6,
             "pos": [
                 11,
                 7
@@ -2274,7 +2274,7 @@
         },
         "12;7": {
             "type": "kill",
-            "variant": 0,
+            "variant": 5,
             "pos": [
                 12,
                 7
@@ -2282,7 +2282,7 @@
         },
         "13;7": {
             "type": "kill",
-            "variant": 0,
+            "variant": 4,
             "pos": [
                 13,
                 7
@@ -2298,7 +2298,7 @@
         },
         "12;6": {
             "type": "kill",
-            "variant": 0,
+            "variant": 1,
             "pos": [
                 12,
                 6
@@ -2306,7 +2306,7 @@
         },
         "13;6": {
             "type": "kill",
-            "variant": 0,
+            "variant": 2,
             "pos": [
                 13,
                 6
