@@ -144,7 +144,7 @@ class Environment:
         # Game state variables
         self.death_sound_played = False
         self.finish_sound_played = False
-        self.countdeathframes = 0
+        self.countframes  = 0
         self.debug_mode = False
         self.movement_started = False
         self.scroll = [0, 0]
@@ -214,6 +214,7 @@ class Environment:
             'spikes': load_images('tiles/spikes', scale=IMGscale),
             'finish': Animation(load_images('tiles/finish', scale=finish_scale), img_dur=5, loop=True),
             'kill': load_images('tiles/kill', scale=IMGscale),
+            'player/finish': Animation(load_images('player/finish', scale=PLAYERS_IMAGE_SIZE), img_dur=10, loop=False),
             'player/run': Animation(load_images('player/run', scale=PLAYERS_IMAGE_SIZE), img_dur=5),
             'player/idle': Animation(load_images('player/idle', scale=PLAYERS_IMAGE_SIZE), img_dur=25),
             'player/wallslide': Animation(load_images('player/wallslide', scale=PLAYERS_IMAGE_SIZE), loop=False),
@@ -248,7 +249,7 @@ class Environment:
                 img_dur=4,  
                 loop=False  
             ),
-            'player/death': Animation(load_images('player/death', scale=(PLAYERS_IMAGE_SIZE[0]*2, PLAYERS_IMAGE_SIZE[1])), img_dur=6, loop=False),
+            'player/death': Animation(load_images('player/death', scale=(PLAYERS_IMAGE_SIZE[0], PLAYERS_IMAGE_SIZE[1])), img_dur=3, loop=False),
         }
         
         background_path = 'background/background.png'
@@ -256,10 +257,10 @@ class Environment:
 
         # Load sounds
         self.sfx = {
-            'death': load_sounds('death', volume=0.25),
+            'death': load_sounds('death', volume=0.2),
             'jump': load_sounds('jump'),
             'collide': load_sounds('wallcollide'),
-            'finish': load_sounds('level_complete'),
+            'finish': load_sounds('level_complete', volume=0.1),
             'click': load_sounds('click'),
         }
 
@@ -282,7 +283,7 @@ class Environment:
         # Reset all state variables
         self.death_sound_played = False
         self.finish_sound_played = False
-        self.countdeathframes = 0
+        self.countframes  = 0
         self.menu = False
         self.debug_mode = False
         
@@ -395,18 +396,20 @@ class Environment:
         self.assets['finish'].update()
         
         if self.player.death:
-            self.countdeathframes += 1
+            self.countframes  += 1
             if not self.death_sound_played:
                 random.choice(self.sfx['death']).play()
                 self.death_sound_played = True
-            if self.countdeathframes >= 40:
+            if self.countframes  >= 40:
                 self.reset()
         
         elif self.player.finishLevel:
+            self.countframes  += 1
             if not self.finish_sound_played:
                 random.choice(self.sfx['finish']).play()
                 self.finish_sound_played = True
-            self.menu = True
+            if self.countframes  >= 150:
+                self.menu = True
             
             if self.is_last_map():
                 self.game_menu.show_level_complete_menu()
@@ -414,7 +417,7 @@ class Environment:
                 self.game_menu.show_congratulations_menu()
             
         if not self.menu:
-            self.player.update(self.tilemap, self.keys, self.countdeathframes)
+            self.player.update(self.tilemap, self.keys, self.countframes)
             update_camera_smooth(self.player, self.scroll, self.display.get_width(), self.display.get_height())
             self.render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
 

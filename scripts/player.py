@@ -45,7 +45,6 @@ class Player:
         return pygame.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
     
     def set_action(self, action, priority=0, lock_frames=0):
-        """Enhanced action setter with priority system and frame locking"""
         if action != self.action or priority > self.animation_priority:
             if self.animation_lock_timer <= 0 or priority > self.animation_priority:
                 self.action = action
@@ -57,7 +56,6 @@ class Player:
         return self.coyote_time <= COYOTE_TIME and not self.grounded
     
     def update_jump_animation_state(self):
-        """Handles transitions between all jump animation phases"""
         if self.jump_phase == 'anticipation':
             self.jump_frame_counter += 1
             # Complete anticipation after 2 frames
@@ -97,6 +95,9 @@ class Player:
         # Highest priority: Death
         if self.death:
             return 'death', 100, 0
+        
+        if self.finishLevel:
+            return 'finish', 100, 0
         
         # High priority: Wall interactions when not grounded
         if (self.collisions['left'] or self.collisions['right']):
@@ -140,7 +141,7 @@ class Player:
         else:
             return 'idle', 5, 0
 
-    def update(self, tilemap, keys, countdeathframes):
+    def update(self, tilemap, keys, countframes):
         # Update animation timer
         if self.animation_lock_timer > 0:
             self.animation_lock_timer -= 1
@@ -153,7 +154,7 @@ class Player:
             self.set_action('death', 100)
             return 
 
-        if countdeathframes > 40 or self.finishLevel:
+        if countframes > 40:
             return 
         
         # Store previous grounded state
