@@ -33,7 +33,6 @@ def find_next_numeric_filename(directory, extension='.json'):
     next_number = max(numeric_names, default=-1) + 1
     return f"{next_number}{extension}"
 
-# This is a sample of what to add to scripts/utils.py
 
 def render_text_with_shadow(surface, text, font, color, x, y, shadow_offset=1, centered=False):
     text_surface = font.render(text, True, color)
@@ -126,7 +125,7 @@ def draw_debug_info(game, surface, offset):
                         rotation_text = debug_font.render(f"{rotation}°", True, (255, 255, 255))
                         surface.blit(rotation_text, (
                             tile['pos'][0] * game.tilemap.tile_size - offset[0] + 2,
-                            tile['pos'][1] * game.tilemap.tile_size - offset[1] + 2
+                            tile['pos'][1] * game.tilemap.tile_size - offset[1] + 50
                         ))
     
     # Draw interactive rects around player (limit to a smaller area)
@@ -156,35 +155,19 @@ def draw_debug_info(game, surface, offset):
     # Show debug status
     debug_font = pygame.font.Font(FONT, 20)
     debug_text = debug_font.render("Debug: Hitboxes Visible", True, (0, 255, 0))
-    surface.blit(debug_text, (10, 80))
+    surface.blit(debug_text, (10, 150))
 
-def update_camera_with_box(player, scroll, display_width, display_height):
-    box_width = 200
-    box_height = 55
+def update_camera_smooth(player, scroll, display_width, display_height):
+    """Simple camera with light smoothing"""
+    player_rect = player.rect()
     
-    box_left = scroll[0] + (display_width / 2) - (box_width / 2)
-    box_right = box_left + box_width
-    box_top = scroll[1] + (display_height / 1.8) - (box_height / 2) 
-    box_bottom = box_top + box_height
+    # Target position (centered on player)
+    target_x = player_rect.centerx - display_width // 2
+    target_y = player_rect.centery - display_height // 2
     
-    player_x = player.rect().centerx
-    player_y = player.rect().centery
-    
-    target_x = scroll[0]
-    target_y = scroll[1]
-    
-    if player_x < box_left:
-        target_x = scroll[0] - (box_left - player_x)
-    elif player_x > box_right:
-        target_x = scroll[0] + (player_x - box_right)
-    
-    if player_y < box_top:
-        target_y = scroll[1] - (box_top - player_y)
-    elif player_y > box_bottom:
-        target_y = scroll[1] + (player_y - box_bottom)
-    
-    scroll[0] += (target_x - scroll[0]) / 15
-    scroll[1] += (target_y - scroll[1]) / 10
+    # Light smoothing (adjust the divisor to make it more/less smooth)
+    scroll[0] += (target_x - scroll[0]) / 8
+    scroll[1] += (target_y - scroll[1]) / 8
     
     return scroll
 class Animation:
@@ -198,11 +181,11 @@ class Animation:
     def copy(self):
         return Animation(self.images, self.img_duration, self.loop)
     
-    def update(self):
+    def update(self, dt=1.0):
         if self.loop:
-            self.frame = (self.frame + 1) % (self.img_duration * len(self.images))
+            self.frame = (self.frame + dt) % (self.img_duration * len(self.images))
         else:
-            self.frame = min(self.frame + 1, self.img_duration * len(self.images) - 1)
+            self.frame = min(self.frame + dt, self.img_duration * len(self.images) - 1)
             if self.frame >= self.img_duration * len(self.images) - 1:
                 self.done = True
     
@@ -415,66 +398,67 @@ class MenuScreen:
             button_y = start_y + row * (self.UI_CONSTANTS['BUTTON_HEIGHT'] + self.UI_CONSTANTS['BUTTON_SPACING'])
             
             self.create_button(text, action, button_x, button_y, fixed_width, bg_color)
-class TextInput:
-    def __init__(self, rect, font, menu, max_chars=20, placeholder="Enter text..."):
-        self.rect = rect
-        self.font = font
-        self.menu = menu
-        self.UI_CONSTANTS = calculate_ui_constants(DISPLAY_SIZE)
-        self.max_chars = max_chars
-        self.placeholder = placeholder
-        self.text = ""
-        self.active = False  # Whether the input box is selected
-        self.cursor_visible = True
-        self.cursor_counter = 0
 
-    def handle_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            # Click toggles active if clicked inside
-            if self.rect.collidepoint(event.pos):
-                self.active = True
-            else:
-                self.active = False
+# class TextInput:
+#     def __init__(self, rect, font, menu, max_chars=20, placeholder="Enter text..."):
+#         self.rect = rect
+#         self.font = font
+#         self.menu = menu
+#         self.UI_CONSTANTS = calculate_ui_constants(DISPLAY_SIZE)
+#         self.max_chars = max_chars
+#         self.placeholder = placeholder
+#         self.text = ""
+#         self.active = False  # Whether the input box is selected
+#         self.cursor_visible = True
+#         self.cursor_counter = 0
 
-        if self.active and event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_BACKSPACE:
-                self.text = self.text[:-1]
-            elif event.key == pygame.K_RETURN:
-                self.active = False  # Optional: deactivate on Enter
-            elif len(self.text) < self.max_chars:
-                if event.unicode.isprintable():
-                    self.text += event.unicode
+#     def handle_event(self, event):
+#         if event.type == pygame.MOUSEBUTTONDOWN:
+#             # Click toggles active if clicked inside
+#             if self.rect.collidepoint(event.pos):
+#                 self.active = True
+#             else:
+#                 self.active = False
 
-    def update(self):
-        # Simple blinking cursor
-        self.cursor_counter += 1
-        if self.cursor_counter >= 30:
-            self.cursor_visible = not self.cursor_visible
-            self.cursor_counter = 0
+#         if self.active and event.type == pygame.KEYDOWN:
+#             if event.key == pygame.K_BACKSPACE:
+#                 self.text = self.text[:-1]
+#             elif event.key == pygame.K_RETURN:
+#                 self.active = False  # Optional: deactivate on Enter
+#             elif len(self.text) < self.max_chars:
+#                 if event.unicode.isprintable():
+#                     self.text += event.unicode
 
-    def draw(self, surface):
-        bg_surface = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+#     def update(self):
+#         # Simple blinking cursor
+#         self.cursor_counter += 1
+#         if self.cursor_counter >= 30:
+#             self.cursor_visible = not self.cursor_visible
+#             self.cursor_counter = 0
+
+#     def draw(self, surface):
+#         bg_surface = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
     
-        # Background box with transparency (last value is alpha)
-        bg_color = (*self.UI_CONSTANTS['BUTTON_HOVER_COLOR'][:3], 175) if self.active else (*self.UI_CONSTANTS['BUTTON_COLOR'][:3], 175)
-        pygame.draw.rect(bg_surface, bg_color, bg_surface.get_rect())
+#         # Background box with transparency (last value is alpha)
+#         bg_color = (*self.UI_CONSTANTS['BUTTON_HOVER_COLOR'][:3], 175) if self.active else (*self.UI_CONSTANTS['BUTTON_COLOR'][:3], 175)
+#         pygame.draw.rect(bg_surface, bg_color, bg_surface.get_rect())
         
-        # Blit the transparent background to the main surface
-        surface.blit(bg_surface, self.rect)
+#         # Blit the transparent background to the main surface
+#         surface.blit(bg_surface, self.rect)
 
-        # Text
-        if self.text:
-            text_surface = self.font.render(self.text, True, (255, 255, 255))
-        else:
-            text_surface = self.font.render(self.placeholder, True, (150, 150, 150))
+#         # Text
+#         if self.text:
+#             text_surface = self.font.render(self.text, True, (255, 255, 255))
+#         else:
+#             text_surface = self.font.render(self.placeholder, True, (150, 150, 150))
 
-        text_x = self.rect.x + 10
-        text_y = self.rect.y + (self.rect.height - text_surface.get_height()) // 2
-        surface.blit(text_surface, (text_x, text_y))
+#         text_x = self.rect.x + 10
+#         text_y = self.rect.y + (self.rect.height - text_surface.get_height()) // 2
+#         surface.blit(text_surface, (text_x, text_y))
 
-        # Cursor
-        if self.active and self.cursor_visible:
-            cursor_x = text_x + text_surface.get_width() + 2
-            cursor_y = text_y
-            cursor_height = text_surface.get_height()
-            pygame.draw.line(surface, (255, 255, 255), (cursor_x, cursor_y), (cursor_x, cursor_y + cursor_height), 2)
+#         # Cursor
+#         if self.active and self.cursor_visible:
+#             cursor_x = text_x + text_surface.get_width() + 2
+#             cursor_y = text_y
+#             cursor_height = text_surface.get_height()
+#             pygame.draw.line(surface, (255, 255, 255), (cursor_x, cursor_y), (cursor_x, cursor_y + cursor_height), 2)

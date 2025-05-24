@@ -10,7 +10,7 @@ from scripts.tilemap import Tilemap
 from scripts.GameTimer import GameTimer
 from scripts.utils import (
     load_image, load_images, Animation, load_sounds, 
-    draw_debug_info, update_camera_with_box, MenuScreen,
+    draw_debug_info, update_camera_smooth, MenuScreen,
     calculate_ui_constants, scale_font
 )
 
@@ -108,7 +108,18 @@ class GameMenu:
         self.congratulations_menu.enable()
     
     def load_next_map(self):
-        self.environment.load_next_map()
+        current_map = game_state_manager.selected_map
+        if current_map:
+            maps_folder = os.path.join('data', 'maps')
+            map_files = sorted([f for f in os.listdir(maps_folder) if f.endswith('.json')])
+            current_index = int(os.path.basename(current_map).split('.')[0])
+            
+            if f'{current_index}.json' in map_files and current_index < len(map_files) - 1:
+                self.environment.load_map_id(current_index + 1)
+            else:
+                self.reset()
+        else:
+            self.reset()
     
     def update(self, events):
         if self.active_menu:
@@ -226,7 +237,7 @@ class Environment:
         # Setup player
         self.pos = self.tilemap.extract([('spawners', 0), ('spawners', 1)])
         self.default_pos = self.pos[0]['pos'].copy() if self.pos else [10, 10]
-        self.player = Player(self, self.default_pos.copy(), (PLAYERS_SIZE[0]*0.9, PLAYERS_SIZE[1]), self.sfx)
+        self.player = Player(self, self.default_pos.copy(), (PLAYERS_SIZE[0], PLAYERS_SIZE[1]), self.sfx)
         
         self.center_scroll_on_player()
         self.keys = {'left': False, 'right': False, 'jump': False}
@@ -368,7 +379,7 @@ class Environment:
             
         if not self.menu:
             self.player.update(self.tilemap, self.keys, self.countdeathframes)
-            update_camera_with_box(self.player, self.scroll, self.display.get_width(), self.display.get_height())
+            update_camera_smooth(self.player, self.scroll, self.display.get_width(), self.display.get_height())
             self.render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
 
     def render(self):

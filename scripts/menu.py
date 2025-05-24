@@ -68,9 +68,6 @@ class Menu:
         if self.active_menu == self.options_menu:
             self._return_to_main()
         elif self.active_menu == self.map_menu:
-            if self.map_menu.showing_level_page:
-                self.map_menu.return_to_selection()
-            else:
                 self._return_to_options()
 
     def _set_player_type(self, value):

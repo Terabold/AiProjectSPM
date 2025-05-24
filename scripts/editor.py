@@ -3,7 +3,7 @@ import pygame
 import os
 import random
 import json
-from scripts.utils import load_images, load_image, find_next_numeric_filename, MenuScreen, load_sounds, TextInput, render_text_with_shadow
+from scripts.utils import load_images, load_image, find_next_numeric_filename, MenuScreen, load_sounds, render_text_with_shadow
 from scripts.tilemap import Tilemap
 from scripts.constants import TILE_SIZE, DISPLAY_SIZE, FPS, PHYSICS_TILES, FONT, MENUBG, calculate_ui_constants, EDITOR_SCROLL_SPEED
 from scripts.GameManager import game_state_manager
@@ -34,32 +34,37 @@ class EditorMenu:
         self.start_editor(map_file)
 
     def create_new_map(self):
-        self.map_menu.showing_edit_page = True
+        # Create a new map directly without edit page
+        maps_dir = 'data/maps'
+        if not os.path.exists(maps_dir):
+            os.makedirs(maps_dir)
+            
+        # Find next available map ID
+        next_filename = find_next_numeric_filename(maps_dir, extension='.json')
+        new_map_path = os.path.join(maps_dir, next_filename)
         
-        # Simplified next ID calculation
-        next_id = "1"
-        if self.map_menu.map_files:
-            map_ids = [int(f.split('.')[0]) for f in self.map_menu.map_files 
-                      if f.split('.')[0].isdigit()]
-            if map_ids:
-                next_id = str(max(map_ids) + 1)
-                
-        self.map_menu.selected_map_id = next_id
-        self.map_menu.title = f"Creating Map #{next_id}"
-        self.map_menu.initialize_edit_page()
+        # Create empty map file
+        empty_map_data = {
+            "tilemap": {},
+            "tile_size": TILE_SIZE,
+            "offgrid": []
+        }
+        
+        with open(new_map_path, 'w') as f:
+            json.dump(empty_map_data, f)
+        
+        # Start editing the new map
+        self.start_editor(next_filename)
 
     def start_editor(self, map_file):
         self.editor = Editor(self, map_file)  
         self.editor_active = True
 
     def quit_editor(self):
-        if self.editor_active and self.map_menu.selected_map_id:
-            self.editor_active = False
-            self.editor = None
-            self.map_menu.showing_edit_page = True
-            self.map_menu.initialize_edit_page()
-        else:
-            game_state_manager.setState('menu')
+        # Always return to menu when quitting editor
+        self.editor_active = False
+        self.editor = None
+        game_state_manager.setState('menu')
 
     def return_to_menu(self):
         self.editor_active = False
@@ -80,10 +85,7 @@ class EditorMenu:
                 pygame.quit()
                 exit()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                if self.map_menu.showing_edit_page:
-                    self.map_menu.return_to_map_list()
-                else:
-                    self.quit_editor()
+                self.quit_editor()
 
         self.map_menu.update(events)
         self.map_menu.draw(self.screen)
@@ -140,7 +142,7 @@ class EditorMapSelectionScreen(MenuScreen):
         current_page_numbers = self.map_numbers[start_index:end_index]
         
         # Scale button width with screen size - increased for better text padding
-        button_width = int(DISPLAY_SIZE[0] * 0.1)  # 18% of screen width
+        button_width = int(DISPLAY_SIZE[0] * 0.1)  # 10% of screen width
         padding = self.UI_CONSTANTS['BUTTON_SPACING']
         columns = self.UI_CONSTANTS['GRID_COLUMNS']
         
@@ -161,30 +163,30 @@ class EditorMapSelectionScreen(MenuScreen):
         )
         
         # Calculate the position for navigation buttons - use relative positioning
-        middle_y = DISPLAY_SIZE[1] * 0.37  # 40% down the screen
+        middle_y = DISPLAY_SIZE[1] * 0.37  # 37% down the screen
         
         # Add "Return" button - position relative to screen size
         back_x = int(DISPLAY_SIZE[0] * 0.02)  # 2% from left
         back_y = int(DISPLAY_SIZE[1] * 0.02)  # 2% from top
-        back_width = int(DISPLAY_SIZE[0] * 0.08)  # 10% of screen width (increased)
+        back_width = int(DISPLAY_SIZE[0] * 0.08)  # 8% of screen width
         self.create_button("←", self.menu.quit_editor, back_x, back_y, back_width)
         
         # Add "New Map" button - position relative to screen size
-        new_map_x = int(DISPLAY_SIZE[0] * 0.75)  # 15% from left
+        new_map_x = int(DISPLAY_SIZE[0] * 0.75)  # 75% from left
         new_map_y = int(DISPLAY_SIZE[1] * 0.15)  # 15% from top
-        new_map_width = int(DISPLAY_SIZE[0] * 0.1)  # 15% of screen width (increased)
+        new_map_width = int(DISPLAY_SIZE[0] * 0.1)  # 10% of screen width
         self.create_button("Add", self.menu.create_new_map, new_map_x, new_map_y, new_map_width)
         
-        # Previous page button - moved further to edge
+        # Previous page button
         if self.current_page > 0:
-            prev_x = int(DISPLAY_SIZE[0] * 0.12)  # 5% from left (closer to edge)
-            nav_button_width = int(DISPLAY_SIZE[0] * 0.08)  # 10% of screen width
+            prev_x = int(DISPLAY_SIZE[0] * 0.12)  # 12% from left
+            nav_button_width = int(DISPLAY_SIZE[0] * 0.08)  # 8% of screen width
             self.create_button("◀", self.previous_page, prev_x, middle_y, nav_button_width)
         
-        # Next page button - moved further to edge
+        # Next page button
         if self.current_page < self.total_pages - 1:
-            next_x = int(DISPLAY_SIZE[0] * 0.8)  # 85% from left (closer to right edge)
-            nav_button_width = int(DISPLAY_SIZE[0] * 0.08)  # 10% of screen width
+            next_x = int(DISPLAY_SIZE[0] * 0.8)  # 80% from left
+            nav_button_width = int(DISPLAY_SIZE[0] * 0.08)  # 8% of screen width
             self.create_button("▶", self.next_page, next_x, middle_y, nav_button_width)
         
         # Add pagination info
@@ -362,10 +364,9 @@ class Editor:
             saved_map_name = filename
         else:
             next_filename = find_next_numeric_filename(directory, extension='.json')            
-            file_path = self.current_map_file
+            file_path = os.path.join(directory, next_filename)
             
             self.tilemap.save(file_path)
-
             self.current_map_file = next_filename
             saved_map_name = next_filename
         
