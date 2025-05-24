@@ -133,6 +133,7 @@ class GameMenu:
             surface.blit(overlay, (0, 0))
             self.active_menu.draw(surface)
 
+from scripts.stars import StarsAnimated
 class Environment:
     def __init__(self, display, clock, ai_train_mode=False):
         self.player_type = game_state_manager.player_type
@@ -140,7 +141,6 @@ class Environment:
         self.display = display
         self.clock = clock
         self.menu = False
-        
         # Game state variables
         self.death_sound_played = False
         self.finish_sound_played = False
@@ -210,10 +210,12 @@ class Environment:
             'decor': load_images('tiles/decor', scale=IMGscale),
             'grass': load_images('tiles/grass', scale=IMGscale),
             'stone': load_images('tiles/stone', scale=IMGscale),
+            'pinkrock' : load_images('tiles/pinkrock', scale=IMGscale),
             'spawners': load_images('tiles/spawners', scale=IMGscale),
             'spikes': load_images('tiles/spikes', scale=IMGscale),
             'finish': Animation(load_images('tiles/finish', scale=finish_scale), img_dur=5, loop=True),
             'kill': load_images('tiles/kill', scale=IMGscale),
+            'stars': load_images('stars', scale=IMGscale), 
             'player/finish': Animation(load_images('player/finish', scale=PLAYERS_IMAGE_SIZE), img_dur=10, loop=False),
             'player/run': Animation(load_images('player/run', scale=PLAYERS_IMAGE_SIZE), img_dur=5),
             'player/idle': Animation(load_images('player/idle', scale=PLAYERS_IMAGE_SIZE), img_dur=25),
@@ -251,6 +253,9 @@ class Environment:
             ),
             'player/death': Animation(load_images('player/death', scale=(PLAYERS_IMAGE_SIZE[0], PLAYERS_IMAGE_SIZE[1])), img_dur=3, loop=False),
         }
+
+        star_images = self.assets['stars']  # this is a list of images
+        self.stars = StarsAnimated(star_images, display_size=DISPLAY_SIZE)
         
         background_path = 'background/background.png'
         self.background = load_image(background_path, scale=DISPLAY_SIZE, remove_color=None)
@@ -394,6 +399,8 @@ class Environment:
         
         # Update animations
         self.assets['finish'].update()
+
+        self.stars.update()
         
         if self.player.death:
             self.countframes  += 1
@@ -408,7 +415,7 @@ class Environment:
             if not self.finish_sound_played:
                 random.choice(self.sfx['finish']).play()
                 self.finish_sound_played = True
-            if self.countframes  >= 150:
+            if self.countframes  >= 90:
                 self.menu = True
             
             if self.is_last_map():
@@ -422,14 +429,19 @@ class Environment:
             self.render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
 
     def render(self):
-        self.display.blit(self.background, (0, 0))
+        self.display.fill((0, 0, 0))
+
+
+        self.stars.render(self.display, offset=self.render_scroll)
+
+        self.player.render(self.display, offset=self.render_scroll)
+
+        self.render_timer()
+
         self.tilemap.render(self.display, offset=self.render_scroll)
 
         if self.debug_mode and not self.menu:
             self.debug_render()
-
-        self.player.render(self.display, offset=self.render_scroll)
-        self.render_timer()
         
         if self.menu:
             # Update button hover states

@@ -8,7 +8,7 @@ if DISPLAY_SIZE[0] / 16 != 0 or DISPLAY_SIZE[1] / 9 != 0:
     DISPLAY_SIZE = (DISPLAY_SIZE[0] - DISPLAY_SIZE[0] % 16, DISPLAY_SIZE[1] - DISPLAY_SIZE[1] % 9)
 
 FPS = 60
-
+BASE_IMG_DUR = 20
 TILE_SIZE = DISPLAY_SIZE[0] // 28 # tilemap tile size
 
 PLAYER_SPEED = 0.8   *TILE_SIZE/36 # added per frame
@@ -32,8 +32,8 @@ COYOTE_TIME = 6 # amount of frames you can jump after leaving the ground
 PLAYERS_SIZE = (TILE_SIZE, TILE_SIZE) # size of actual player hitbox
 PLAYERS_IMAGE_SIZE = (PLAYERS_SIZE[0], PLAYERS_SIZE[1]) # size of the player image
 
-PHYSICS_TILES = {'grass', 'stone'}
-AUTOTILE_TYPES = {'grass', 'stone', 'kill'}
+PHYSICS_TILES = {'grass', 'stone', 'pinkrock'}
+AUTOTILE_TYPES = {'grass', 'stone', 'kill', 'pinkrock'}
 INTERACTIVE_TILES = {'finish', 'spikes', 'kill', 'portal up', 'portal down'}
 SPIKE_SIZE = (0.6, 0.25)
 SAW_SIZE = 0.8

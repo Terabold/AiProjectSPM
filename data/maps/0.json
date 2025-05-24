@@ -2265,28 +2265,31 @@
             ]
         },
         "11;7": {
-            "type": "kill",
-            "variant": 6,
+            "type": "spikes",
+            "variant": 0,
             "pos": [
                 11,
                 7
-            ]
+            ],
+            "rotation": 0
         },
         "12;7": {
-            "type": "kill",
-            "variant": 5,
+            "type": "spikes",
+            "variant": 0,
             "pos": [
                 12,
                 7
-            ]
+            ],
+            "rotation": 0
         },
         "13;7": {
-            "type": "kill",
-            "variant": 4,
+            "type": "spikes",
+            "variant": 0,
             "pos": [
                 13,
                 7
-            ]
+            ],
+            "rotation": 0
         },
         "11;6": {
             "type": "kill",
@@ -2383,6 +2386,51 @@
                 -4
             ],
             "rotation": 270
+        },
+        "2;5": {
+            "type": "spikes",
+            "variant": 0,
+            "pos": [
+                2,
+                5
+            ],
+            "rotation": 0
+        },
+        "14;5": {
+            "type": "spikes",
+            "variant": 0,
+            "pos": [
+                14,
+                5
+            ],
+            "rotation": 0
+        },
+        "11;0": {
+            "type": "spikes",
+            "variant": 0,
+            "pos": [
+                11,
+                0
+            ],
+            "rotation": 180
+        },
+        "12;0": {
+            "type": "spikes",
+            "variant": 0,
+            "pos": [
+                12,
+                0
+            ],
+            "rotation": 180
+        },
+        "13;0": {
+            "type": "spikes",
+            "variant": 0,
+            "pos": [
+                13,
+                0
+            ],
+            "rotation": 180
         }
     },
     "offgrid": [],

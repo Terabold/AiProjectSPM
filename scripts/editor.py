@@ -289,6 +289,7 @@ class Editor:
         assets = {
             'decor': load_images('tiles/decor', scale=IMGscale),
             'grass': load_images('tiles/grass', scale=IMGscale),
+            'pinkrock' : load_images('tiles/pinkrock', scale=IMGscale),
             'stone': load_images('tiles/stone', scale=IMGscale),
             'spawners': load_images('tiles/spawners', scale=IMGscale),
             'spikes': load_images('tiles/spikes', scale=IMGscale),
