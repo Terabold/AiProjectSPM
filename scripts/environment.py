@@ -251,11 +251,12 @@ class Environment:
                 img_dur=4,  
                 loop=False  
             ),
-            'player/death': Animation(load_images('player/death', scale=(PLAYERS_IMAGE_SIZE[0], PLAYERS_IMAGE_SIZE[1])), img_dur=3, loop=False),
+            'player/death': Animation(load_images('player/death', scale=(PLAYERS_IMAGE_SIZE[0]*2, PLAYERS_IMAGE_SIZE[1])), img_dur=6, loop=False),
         }
 
         star_images = self.assets['stars']  # this is a list of images
-        self.stars = StarsAnimated(star_images, display_size=DISPLAY_SIZE)
+        self.stars = StarsAnimated(star_images, display_size=DISPLAY_SIZE, count=25, min_dist=200)
+
         
         background_path = 'background/background.png'
         self.background = load_image(background_path, scale=DISPLAY_SIZE, remove_color=None)
@@ -394,13 +395,13 @@ class Environment:
                     
             self.keys, self.buffer_times = self.input_handler.process_events(events, self.menu)
     
-    def update(self):
+    def update(self, dt):
         self.update_timer()
         
         # Update animations
         self.assets['finish'].update()
 
-        self.stars.update()
+        self.stars.update(dt)
         
         if self.player.death:
             self.countframes  += 1

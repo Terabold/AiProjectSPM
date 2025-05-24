@@ -21,14 +21,19 @@ class Engine:
 
     def run(self):
         previous_state = None
-        
+
+        dt = self.clock.tick(60) / 1000.0
+
         while True:
             current_state = game_state_manager.getState()
             
             if previous_state == 'menu' and current_state == 'game':
                 self.game.initialize_environment()
             
-            self.state[current_state].run()
+            if current_state == 'game':
+                self.state[current_state].run(dt)
+            else:
+                self.state[current_state].run()
             
             previous_state = current_state
             

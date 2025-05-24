@@ -12,7 +12,7 @@ class Game:
     def initialize_environment(self):
         self.environment = Environment(self.display, self.clock)
 
-    def run(self):
+    def run(self, dt):
         if not self.environment:
             self.initialize_environment()
             
@@ -32,5 +32,5 @@ class Game:
         else:
             self.environment.process_human_input(events)
         
-        self.environment.update()
+        self.environment.update(dt)
         self.environment.render()
