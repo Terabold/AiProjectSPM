@@ -196,7 +196,8 @@ class Environment:
     def reset_timer(self):
         self.timer.reset()
         self.movement_started = False
-    
+
+
     def load_current_map(self):
         map_path = game_state_manager.selected_map
         self.tilemap.load(map_path)
@@ -211,17 +212,44 @@ class Environment:
             'spikes': load_images('tiles/spikes', scale=IMGscale),
             'finish': load_images('tiles/finish', scale=IMGscale),
             'kill': load_images('tiles/kill', scale=IMGscale),
-            'player': load_image('player/player.png', scale=PLAYERS_IMAGE_SIZE),
             'player/run': Animation(load_images('player/run', scale=PLAYERS_IMAGE_SIZE), img_dur=5),
             'player/idle': Animation(load_images('player/idle', scale=PLAYERS_IMAGE_SIZE), img_dur=25),
             'player/wallslide': Animation(load_images('player/wallslide', scale=PLAYERS_IMAGE_SIZE), loop=False),
             'player/wallcollide': Animation(load_images('player/wallcollide', scale=PLAYERS_IMAGE_SIZE), loop=False),
-            'player/jump': Animation(load_images('player/jump', scale=PLAYERS_IMAGE_SIZE), img_dur=4, loop=False),
+            'player/jump_anticipation': Animation(
+                load_images('player/jump_anticipation', scale=PLAYERS_IMAGE_SIZE),
+                img_dur=1,  # Faster frame rate for more responsive anticipation
+                loop=False  # Don't loop the anticipation animation
+            ),
+            'player/jump_peak': Animation(
+                load_images('player/jump_peak', scale=PLAYERS_IMAGE_SIZE),
+                img_dur=6,  # Match frame lock duration
+                loop=False
+            ),
+            'player/jump_rising': Animation(
+                load_images('player/jump_rising', scale=PLAYERS_IMAGE_SIZE),  # Fixed path
+                img_dur=8,  # Adjusted duration for better visibility
+                loop=False
+            ),
+            'player/jump_landing': Animation(
+                load_images('player/jump_land', scale=PLAYERS_IMAGE_SIZE),
+                img_dur=4,  # Faster frame rate for more responsive landing
+                loop=False  # Don't loop the landing animation
+            ),
+            'player/jump_falling': Animation(
+                load_images('player/jump_falling', scale=PLAYERS_IMAGE_SIZE),
+                img_dur=4,  # Faster frame rate for more responsive fall
+                loop=False  # Don't loop the fall animation
+            ),
+            'player/jump_land': Animation(
+                load_images('player/jump_land', scale=PLAYERS_IMAGE_SIZE),
+                img_dur=4,  # Faster frame rate for more responsive fall landing
+                loop=False  # Don't loop the fall landing animation
+            ),
             'player/fall': Animation(load_images('player/fall', scale=PLAYERS_IMAGE_SIZE), img_dur=4, loop=False),
             'player/death': Animation(load_images('player/death', scale=(PLAYERS_IMAGE_SIZE[0]*2, PLAYERS_IMAGE_SIZE[1])), img_dur=6, loop=False),
         }
         
-        # Load background
         background_path = 'background/background.png'
         self.background = load_image(background_path, scale=DISPLAY_SIZE, remove_color=None)
 
