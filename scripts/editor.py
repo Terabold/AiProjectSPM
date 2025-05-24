@@ -292,7 +292,8 @@ class Editor:
             'stone': load_images('tiles/stone', scale=IMGscale),
             'spawners': load_images('tiles/spawners', scale=IMGscale),
             'spikes': load_images('tiles/spikes', scale=IMGscale),
-            'finish': load_images('tiles/finish', scale=IMGscale),
+            'finish': load_images('tiles/finish', scale=(IMGscale[0], IMGscale[1]*2)),
+            'finish_animation': load_images('tiles/finish', scale=(IMGscale[0], IMGscale[1]*2)),
             'kill': load_images('tiles/kill', scale=IMGscale),
         }
         self.rotated_assets = {}
@@ -326,31 +327,69 @@ class Editor:
                 current_rot = tile.get('rotation', 0)
                 new_rot = (current_rot - 90) % 360
                 self.tilemap.tilemap[tile_loc]['rotation'] = new_rot
+
+    def canPlaceTile(self, mpos):
+        return mpos[0] >= self.menu_width
+
+    def deleteGridBlock(self, tile_pos):
+        tile_loc = str(tile_pos[0]) + ';' + str(tile_pos[1])
+        if tile_loc in self.tilemap.tilemap:
+            tile = self.tilemap.tilemap[tile_loc]
+            tile_type = tile['type'].split()[0]
+            
+            # Handle 2-tile blocks (portal, finish)
+            if tile_type in {'portal', 'finish'}:
+                if tile['type'].split()[1] == 'up':
+                    # Remove bottom part
+                    bottom_loc = str(tile_pos[0]) + ';' + str(tile_pos[1] + 1)
+                    if bottom_loc in self.tilemap.tilemap:
+                        del self.tilemap.tilemap[bottom_loc]
+                else:
+                    # Remove top part
+                    top_loc = str(tile_pos[0]) + ';' + str(tile_pos[1] - 1)
+                    if top_loc in self.tilemap.tilemap:
+                        del self.tilemap.tilemap[top_loc]
+            
+            del self.tilemap.tilemap[tile_loc]
+
+    def placeGridBlock(self, tile_pos, tile_type):
+        self.deleteGridBlock(tile_pos)
+        self.tilemap.tilemap[str(tile_pos[0]) + ';' + str(tile_pos[1])] = {
+            'type': tile_type, 
+            'variant': self.tile_variant, 
+            'pos': tile_pos
+        }
     
     def handle_tile_placement(self, tile_pos, mpos):
-        if not self.clicking:
+        if not (self.clicking and self.ongrid and self.canPlaceTile(mpos)):
             return
             
-        current_tile_type = self.tile_list[self.tile_group]
+        tile_type = self.tile_list[self.tile_group]
         
         # Remove existing spawners if placing new one
-        if current_tile_type == 'spawners' and self.count_spawners() > 0:
+        if tile_type == 'spawners' and self.count_spawners() > 0:
             self.tilemap.extract([('spawners', 0), ('spawners', 1)], keep=False)
         
-        tile_data = {
-            'type': current_tile_type,
-            'variant': self.tile_variant,
-            'pos': tile_pos if self.ongrid else ((mpos[0] + self.scroll[0]) / self.tilemap.tile_size, 
-                                                (mpos[1] + self.scroll[1]) / self.tilemap.tile_size)
-        }
-        
-        if current_tile_type == 'spikes':
-            tile_data['rotation'] = self.current_rotation
-        
-        if self.ongrid:
-            self.tilemap.tilemap[f"{tile_pos[0]};{tile_pos[1]}"] = tile_data
-        elif current_tile_type not in PHYSICS_TILES:
-            self.tilemap.offgrid_tiles.append(tile_data)
+        # Handle 2-tile blocks
+        if tile_type in {'portal', 'finish'}:
+            self.placeGridBlock(tile_pos, tile_type + ' up')
+            self.placeGridBlock((tile_pos[0], tile_pos[1] + 1), tile_type + ' down')
+        else:
+            # Handle single tiles
+            tile_data = {
+                'type': tile_type,
+                'variant': self.tile_variant,
+                'pos': tile_pos if self.ongrid else ((mpos[0] + self.scroll[0]) / self.tilemap.tile_size, 
+                                                    (mpos[1] + self.scroll[1]) / self.tilemap.tile_size)
+            }
+            
+            if tile_type == 'spikes':
+                tile_data['rotation'] = self.current_rotation
+            
+            if self.ongrid:
+                self.tilemap.tilemap[f"{tile_pos[0]};{tile_pos[1]}"] = tile_data
+            elif tile_type not in PHYSICS_TILES:
+                self.tilemap.offgrid_tiles.append(tile_data)
                 
     def save_map(self):
         directory = 'data/maps'
@@ -381,10 +420,8 @@ class Editor:
         if not self.right_clicking:
             return
             
-        # Remove grid tile
-        tile_loc = f"{tile_pos[0]};{tile_pos[1]}"
-        if tile_loc in self.tilemap.tilemap:
-            del self.tilemap.tilemap[tile_loc]
+        # Remove grid tile using new method
+        self.deleteGridBlock(tile_pos)
         
         # Remove offgrid tiles
         for tile in self.tilemap.offgrid_tiles.copy():

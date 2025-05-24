@@ -120,14 +120,6 @@
                 5
             ]
         },
-        "20;5": {
-            "type": "finish",
-            "variant": 0,
-            "pos": [
-                20,
-                5
-            ]
-        },
         "7;7": {
             "type": "stone",
             "variant": 8,
@@ -154,7 +146,7 @@
         },
         "10;7": {
             "type": "stone",
-            "variant": 3,
+            "variant": 8,
             "pos": [
                 10,
                 7
@@ -162,7 +154,7 @@
         },
         "14;7": {
             "type": "stone",
-            "variant": 7,
+            "variant": 8,
             "pos": [
                 14,
                 7
@@ -2255,9 +2247,144 @@
                 1,
                 -20
             ]
+        },
+        "20;4": {
+            "type": "finish up",
+            "variant": 0,
+            "pos": [
+                20,
+                4
+            ]
+        },
+        "20;5": {
+            "type": "finish down",
+            "variant": 0,
+            "pos": [
+                20,
+                5
+            ]
+        },
+        "11;7": {
+            "type": "kill",
+            "variant": 0,
+            "pos": [
+                11,
+                7
+            ]
+        },
+        "12;7": {
+            "type": "kill",
+            "variant": 0,
+            "pos": [
+                12,
+                7
+            ]
+        },
+        "13;7": {
+            "type": "kill",
+            "variant": 0,
+            "pos": [
+                13,
+                7
+            ]
+        },
+        "11;6": {
+            "type": "kill",
+            "variant": 0,
+            "pos": [
+                11,
+                6
+            ]
+        },
+        "12;6": {
+            "type": "kill",
+            "variant": 0,
+            "pos": [
+                12,
+                6
+            ]
+        },
+        "13;6": {
+            "type": "kill",
+            "variant": 0,
+            "pos": [
+                13,
+                6
+            ]
+        },
+        "6;1": {
+            "type": "spikes",
+            "variant": 0,
+            "pos": [
+                6,
+                1
+            ],
+            "rotation": 270
+        },
+        "6;0": {
+            "type": "spikes",
+            "variant": 0,
+            "pos": [
+                6,
+                0
+            ],
+            "rotation": 270
+        },
+        "6;-1": {
+            "type": "spikes",
+            "variant": 0,
+            "pos": [
+                6,
+                -1
+            ],
+            "rotation": 270
+        },
+        "6;-2": {
+            "type": "spikes",
+            "variant": 0,
+            "pos": [
+                6,
+                -2
+            ],
+            "rotation": 270
+        },
+        "6;2": {
+            "type": "spikes",
+            "variant": 0,
+            "pos": [
+                6,
+                2
+            ],
+            "rotation": 270
+        },
+        "6;3": {
+            "type": "spikes",
+            "variant": 0,
+            "pos": [
+                6,
+                3
+            ],
+            "rotation": 270
+        },
+        "6;-3": {
+            "type": "spikes",
+            "variant": 0,
+            "pos": [
+                6,
+                -3
+            ],
+            "rotation": 270
+        },
+        "6;-4": {
+            "type": "spikes",
+            "variant": 0,
+            "pos": [
+                6,
+                -4
+            ],
+            "rotation": 270
         }
     },
     "offgrid": [],
-    "lowest_y": 8,
-    "map": null
+    "lowest_y": 8
 }

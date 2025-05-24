@@ -34,7 +34,7 @@ PLAYERS_IMAGE_SIZE = (PLAYERS_SIZE[0], PLAYERS_SIZE[1]) # size of the player ima
 
 PHYSICS_TILES = {'grass', 'stone'}
 AUTOTILE_TYPES = {'grass', 'stone'}
-INTERACTIVE_TILES = {'spikes', 'finish', 'kill'}
+INTERACTIVE_TILES = {'finish', 'spikes', 'kill', 'portal up', 'portal down'}
 SPIKE_SIZE = (0.6, 0.25)
 SAW_SIZE = 0.8
 

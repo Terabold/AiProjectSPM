@@ -203,6 +203,8 @@ class Environment:
         self.tilemap.load(map_path)
         IMGscale = (self.tilemap.tile_size, self.tilemap.tile_size)
 
+        finish_scale = (self.tilemap.tile_size, self.tilemap.tile_size * 2)
+
         # Load assets
         self.assets = {          
             'decor': load_images('tiles/decor', scale=IMGscale),
@@ -210,7 +212,7 @@ class Environment:
             'stone': load_images('tiles/stone', scale=IMGscale),
             'spawners': load_images('tiles/spawners', scale=IMGscale),
             'spikes': load_images('tiles/spikes', scale=IMGscale),
-            'finish': load_images('tiles/finish', scale=IMGscale),
+            'finish': Animation(load_images('tiles/finish', scale=finish_scale), img_dur=5, loop=True),
             'kill': load_images('tiles/kill', scale=IMGscale),
             'player/run': Animation(load_images('player/run', scale=PLAYERS_IMAGE_SIZE), img_dur=5),
             'player/idle': Animation(load_images('player/idle', scale=PLAYERS_IMAGE_SIZE), img_dur=25),
@@ -218,35 +220,34 @@ class Environment:
             'player/wallcollide': Animation(load_images('player/wallcollide', scale=PLAYERS_IMAGE_SIZE), loop=False),
             'player/jump_anticipation': Animation(
                 load_images('player/jump_anticipation', scale=PLAYERS_IMAGE_SIZE),
-                img_dur=1,  # Faster frame rate for more responsive anticipation
-                loop=False  # Don't loop the anticipation animation
+                img_dur=2,  
+                loop=False  
             ),
             'player/jump_peak': Animation(
                 load_images('player/jump_peak', scale=PLAYERS_IMAGE_SIZE),
-                img_dur=6,  # Match frame lock duration
+                img_dur=6,  
                 loop=False
             ),
             'player/jump_rising': Animation(
-                load_images('player/jump_rising', scale=PLAYERS_IMAGE_SIZE),  # Fixed path
-                img_dur=8,  # Adjusted duration for better visibility
+                load_images('player/jump_rising', scale=PLAYERS_IMAGE_SIZE),  
+                img_dur=8, 
                 loop=False
             ),
             'player/jump_landing': Animation(
                 load_images('player/jump_land', scale=PLAYERS_IMAGE_SIZE),
-                img_dur=4,  # Faster frame rate for more responsive landing
-                loop=False  # Don't loop the landing animation
+                img_dur=10,  
+                loop=False 
             ),
             'player/jump_falling': Animation(
                 load_images('player/jump_falling', scale=PLAYERS_IMAGE_SIZE),
-                img_dur=4,  # Faster frame rate for more responsive fall
-                loop=False  # Don't loop the fall animation
+                img_dur=4, 
+                loop=False 
             ),
             'player/jump_land': Animation(
                 load_images('player/jump_land', scale=PLAYERS_IMAGE_SIZE),
-                img_dur=4,  # Faster frame rate for more responsive fall landing
-                loop=False  # Don't loop the fall landing animation
+                img_dur=4,  
+                loop=False  
             ),
-            'player/fall': Animation(load_images('player/fall', scale=PLAYERS_IMAGE_SIZE), img_dur=4, loop=False),
             'player/death': Animation(load_images('player/death', scale=(PLAYERS_IMAGE_SIZE[0]*2, PLAYERS_IMAGE_SIZE[1])), img_dur=6, loop=False),
         }
         
@@ -304,6 +305,10 @@ class Environment:
         game_state_manager.selected_map = next_map
         self.reset()
         self.tilemap.load(next_map)
+        
+        # Reset the finish animation instead of calling update on non-existent animation
+        finish_scale = (self.tilemap.tile_size, self.tilemap.tile_size * 2)
+        self.assets['finish'] = Animation(load_images('tiles/finish', scale=finish_scale), img_dur=5, loop=True)
         
         # Update spawn position
         self.pos = self.tilemap.extract([('spawners', 0), ('spawners', 1)])
@@ -386,6 +391,9 @@ class Environment:
     def update(self):
         self.update_timer()
         
+        # Update animations
+        self.assets['finish'].update()
+        
         if self.player.death:
             self.countdeathframes += 1
             if not self.death_sound_played:
@@ -445,7 +453,7 @@ class Environment:
         draw_debug_info(self, self.display, self.render_scroll)  
         fps = self.clock.get_fps()
         fps_text = self.fps_font.render(f"FPS: {int(fps)}", True, (255, 255, 0))
-        self.display.blit(fps_text, (10, 10))
+        self.display.blit(fps_text, (10, 80))
     
     def get_state(self):
         if self.ai_train_mode:

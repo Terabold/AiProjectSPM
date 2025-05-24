@@ -83,74 +83,59 @@ def draw_debug_info(game, surface, offset):
         2
     )
     
-    # Get visible area only
+    # Get visible area
     visible_start_x = offset[0] // game.tilemap.tile_size
     visible_end_x = (offset[0] + surface.get_width()) // game.tilemap.tile_size + 1
     visible_start_y = offset[1] // game.tilemap.tile_size
     visible_end_y = (offset[1] + surface.get_height()) // game.tilemap.tile_size + 1
     
-    # Limit debug drawing to visible spikes only
+    # Draw interactive tiles in visible area
     for x in range(visible_start_x, visible_end_x):
         for y in range(visible_start_y, visible_end_y):
             loc = f"{x};{y}"
             if loc in game.tilemap.tilemap:
                 tile = game.tilemap.tilemap[loc]
-                if tile['type'] == 'spikes':
-                    # Draw tile outline
-                    pygame.draw.rect(
-                        surface,
-                        (255, 192, 203),
-                        (tile['pos'][0] * game.tilemap.tile_size - offset[0],
-                         tile['pos'][1] * game.tilemap.tile_size - offset[1],
-                         game.tilemap.tile_size, game.tilemap.tile_size),
-                        1
-                    )
+                base_type = tile['type'].split()[0]
+                
+                if base_type in ['spikes', 'finish', 'portal', 'kill']:
+                    # Set colors based on tile type
+                    if base_type == 'spikes':
+                        color = (255, 255, 0)  # Yellow for spikes
+                        if 'rotation' in tile:
+                            rect = game.tilemap._get_spike_rect(tile)
+                        else:
+                            rect = pygame.Rect(tile['pos'][0] * game.tilemap.tile_size, 
+                                             tile['pos'][1] * game.tilemap.tile_size, 
+                                             game.tilemap.tile_size, game.tilemap.tile_size)
+                    elif base_type == 'finish':
+                        color = (0, 255, 0)    # Green for finish
+                        if tile['type'] in ['finish up', 'finish']:
+                            rect = pygame.Rect(tile['pos'][0] * game.tilemap.tile_size, 
+                                             tile['pos'][1] * game.tilemap.tile_size, 
+                                             game.tilemap.tile_size, game.tilemap.tile_size * 2)
+                        else:
+                            rect = pygame.Rect(tile['pos'][0] * game.tilemap.tile_size, 
+                                             tile['pos'][1] * game.tilemap.tile_size, 
+                                             game.tilemap.tile_size, game.tilemap.tile_size)
+                    elif base_type == 'portal':
+                        color = (255, 0, 255)  # Magenta for portal
+                        rect = pygame.Rect(tile['pos'][0] * game.tilemap.tile_size, 
+                                         tile['pos'][1] * game.tilemap.tile_size, 
+                                         game.tilemap.tile_size, game.tilemap.tile_size)
+                    else:  # kill or other
+                        color = (255, 165, 0)  # Orange for kill zones
+                        rect = pygame.Rect(tile['pos'][0] * game.tilemap.tile_size, 
+                                         tile['pos'][1] * game.tilemap.tile_size, 
+                                         game.tilemap.tile_size, game.tilemap.tile_size)
                     
-                    # Get spike rect
-                    spike_rect = game.tilemap.get_spike_rect_with_rotation(tile)
-                    
-                    # Draw spike hitbox
-                    pygame.draw.rect(
-                        surface,
-                        (255, 255, 0),
-                        (spike_rect.x - offset[0], spike_rect.y - offset[1],
-                         spike_rect.width, spike_rect.height),
-                        2
-                    )
-                    
-                    # Show rotation value (only if really needed)
-                    if game.show_rotation_values:  # Add this flag to your game class
-                        rotation = tile.get('rotation', 0)
-                        debug_font = pygame.font.Font(FONT, 10)
-                        rotation_text = debug_font.render(f"{rotation}°", True, (255, 255, 255))
-                        surface.blit(rotation_text, (
-                            tile['pos'][0] * game.tilemap.tile_size - offset[0] + 2,
-                            tile['pos'][1] * game.tilemap.tile_size - offset[1] + 50
-                        ))
-    
-    # Draw interactive rects around player (limit to a smaller area)
-    player_pos = game.player.pos
-    interactive_rects = game.tilemap.interactive_rects_around(player_pos)
-    
-    for rect_data in interactive_rects:
-        rect, tile_info = rect_data
-        color = (255, 255, 0) if tile_info[0] == 'spikes' else (0, 255, 0) if tile_info[0] == 'finish' else (0, 0, 255)
-        
-        pygame.draw.rect(
-            surface,
-            color,
-            (rect.x - offset[0], rect.y - offset[1],
-             rect.width, rect.height),
-            2
-        )
-        
-        # Draw center dot only if needed
-        pygame.draw.circle(
-            surface,
-            (255, 165, 0),
-            (rect.centerx - offset[0], rect.centery - offset[1]),
-            3
-        )
+                    # Skip rendering 'down' parts of split tiles to avoid duplicates
+                    if not tile['type'].endswith(' down'):
+                        pygame.draw.rect(
+                            surface,
+                            color,
+                            (rect.x - offset[0], rect.y - offset[1], rect.width, rect.height),
+                            2
+                        )
     
     # Show debug status
     debug_font = pygame.font.Font(FONT, 20)
